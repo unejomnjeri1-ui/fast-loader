@@ -1,0 +1,65 @@
+local ReplicatedFirst = game:GetService("ReplicatedFirst")
+local ContentProvider = game:GetService("ContentProvider")
+local Players = game:GetService("Players")
+
+-- Skip Roblox's default loading screen
+ReplicatedFirst:RemoveDefaultLoadingScreen()
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Simple loading screen
+local screenGui = Instance.new("ScreenGui")
+screenGui.IgnoreGuiInset = true
+screenGui.ResetOnSpawn = false
+screenGui.DisplayOrder = 100
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.fromScale(1, 1)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.Parent = screenGui
+
+local label = Instance.new("TextLabel")
+label.Size = UDim2.fromScale(1, 0.1)
+label.Position = UDim2.fromScale(0, 0.45)
+label.BackgroundTransparency = 1
+label.TextColor3 = Color3.new(1, 1, 1)
+label.TextScaled = true
+label.Font = Enum.Font.GothamBold
+label.Text = "Loading..."
+label.Parent = frame
+
+screenGui.Parent = playerGui
+
+-- Wait only for what's actually needed
+if not game:IsLoaded() then
+	game.Loaded:Wait()
+end
+
+-- Preload ONLY your key assets (spawn area, main UI, important sounds)
+local assetsToLoad = {
+	-- game.Workspace.SpawnArea,
+	-- game.ReplicatedStorage.MainUI,
+}
+
+local total = #assetsToLoad
+if total > 0 then
+	local loaded = 0
+	for _, asset in ipairs(assetsToLoad) do
+		ContentProvider:PreloadAsync({asset})
+		loaded += 1
+		label.Text = ("Loading... %d%%"):format(math.floor(loaded / total * 100))
+	end
+end
+
+-- Make sure the character exists, then fade out
+player.CharacterAdded:Wait()
+task.wait(0.2)
+
+for i = 0, 1, 0.1 do
+	frame.BackgroundTransparency = i
+	label.TextTransparency = i
+	task.wait(0.03)
+end
+
+screenGui:Destroy()
